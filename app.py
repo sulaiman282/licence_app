@@ -304,8 +304,8 @@ def get_licenses(payload):
     return jsonify(licenses)
 
 @app.route('/api/licenses', methods=['POST'])
-@requires_auth
-def create_license():
+@token_required
+def create_license(payload):
     """Create a new license"""
     data = request.json
     duration_days = data.get('duration_days', 30)
@@ -335,8 +335,8 @@ def create_license():
         conn.close()
 
 @app.route('/api/licenses/<license_key>', methods=['PUT'])
-@requires_auth
-def update_license(license_key):
+@token_required
+def update_license(payload, license_key):
     """Update license (extend duration, block/unblock)"""
     data = request.json
     
@@ -379,8 +379,8 @@ def update_license(license_key):
     return jsonify({"success": True})
 
 @app.route('/api/licenses/<license_key>', methods=['DELETE'])
-@requires_auth
-def delete_license(license_key):
+@token_required
+def delete_license(payload, license_key):
     """Delete a license"""
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
@@ -455,8 +455,8 @@ def validate_license():
     })
 
 @app.route('/api/stats', methods=['GET'])
-@requires_auth
-def get_stats():
+@token_required
+def get_stats(payload):
     """Get license statistics"""
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
@@ -483,8 +483,8 @@ def get_stats():
     })
 
 @app.route('/api/licenses/filter', methods=['POST'])
-@requires_auth
-def filter_licenses():
+@token_required
+def filter_licenses(payload):
     """Filter licenses by date range"""
     data = request.json
     start_date = data.get('start_date')
@@ -547,8 +547,8 @@ def add_history():
         conn.close()
 
 @app.route('/api/history', methods=['GET'])
-@requires_auth
-def get_history():
+@token_required
+def get_history(payload):
     """Get browsing history - recent 100 mixed or filtered by machine_id"""
     machine_id = request.args.get('machine_id')
     limit = int(request.args.get('limit', 100))
@@ -575,8 +575,8 @@ def get_history():
     return jsonify(history)
 
 @app.route('/api/history/users', methods=['GET'])
-@requires_auth
-def get_history_users():
+@token_required
+def get_history_users(payload):
     """Get list of unique machine IDs with history"""
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row

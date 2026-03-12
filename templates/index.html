@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕷️ Spidy Manager</title>
+    <title>Spider Licence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script>
@@ -19,18 +19,34 @@
         .animate-slideIn { animation: slideIn 0.4s ease-out; }
         .card-hover { transition: all 0.3s ease; }
         .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .logo-text { font-weight: 800; letter-spacing: -0.5px; }
+        .logo-spider { color: #ef4444; }
+        .license-blocked { background-color: rgba(239, 68, 68, 0.15) !important; }
+        .license-blocked:hover { background-color: rgba(239, 68, 68, 0.25) !important; }
+        .license-expired { background-color: rgba(239, 68, 68, 0.15) !important; }
+        .license-expired:hover { background-color: rgba(239, 68, 68, 0.25) !important; }
+        .license-active { background-color: rgba(34, 197, 94, 0.15) !important; }
+        .license-active:hover { background-color: rgba(34, 197, 94, 0.25) !important; }
+        .license-unused { background-color: rgba(234, 179, 8, 0.15) !important; }
+        .license-unused:hover { background-color: rgba(234, 179, 8, 0.25) !important; }
     </style>
 </head>
 <body class="bg-dark-bg text-gray-100 min-h-screen">
     <!-- Top Navigation - Flex Left Right -->
     <div class="bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold">🕷️ Spidy Manager</h1>
+            <h1 class="text-xl logo-text">
+                <span class="logo-spider">Spider</span> Licence
+            </h1>
             <nav class="flex gap-6">
-                <a href="/" class="text-white font-semibold text-sm border-b-2 border-white pb-1">Home</a>
+                <a href="/" class="text-white font-semibold text-sm border-b-2 border-white pb-1">Licence</a>
                 <a href="/history" class="text-white/70 hover:text-white transition text-sm pb-1">History</a>
             </nav>
-            <div class="w-32"></div>
+            <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition">
+                <i class="bi bi-box-arrow-right mr-1"></i>Logout
+            </button>
         </div>
     </div>
 
@@ -80,7 +96,7 @@
             </div>
 
             
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto hide-scrollbar">
                 <table class="w-full text-xs">
                     <thead class="text-xs uppercase bg-dark-hover border-b border-gray-700">
                         <tr>
@@ -249,14 +265,47 @@
     </div>
 
     <script>
-        let allLicenses=[],filteredLicenses=[],currentPage=1,pageSize=10,currentEditKey=null,sortColumn=3,sortAsc=false;
-        const ADMIN_USER='admin',ADMIN_PASS='changeme123';
-        function getAuthHeaders(){return{'Authorization':'Basic '+btoa(ADMIN_USER+':'+ADMIN_PASS),'Content-Type':'application/json'};}
+        // Auth check on page load
+        if (!localStorage.getItem('token')) {
+            window.location.href = '/login';
+        }
 
-        async function loadStats(){try{const r=await fetch('/api/stats',{headers:getAuthHeaders()}),s=await r.json();document.getElementById('stat-total').textContent=s.total;document.getElementById('stat-active').textContent=s.active;document.getElementById('stat-valid').textContent=s.valid;document.getElementById('stat-activated').textContent=s.activated;}catch(e){console.error(e);}}
+        let allLicenses=[],filteredLicenses=[],currentPage=1,pageSize=10,currentEditKey=null,sortColumn=3,sortAsc=false;
+        function getAuthHeaders(){return{'Authorization':'Bearer '+localStorage.getItem('token'),'Content-Type':'application/json'};}
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('email');
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadStats(){try{const r=await fetch('/api/stats',{headers:getAuthHeaders()}),s=await r.json();document.getElementById('stat-total').textContent=s.total;document.getElementById('stat-active').textContent=s.active;document.getElementById('stat-valid').textContent=s.valid;document.getElementById('stat-activated').textContent=s.activated;}catch(e){console.error(e);if(e.message.includes('401')||e.message.includes('403'))logout();}}
         async function loadLicenses(){try{const r=await fetch('/api/licenses',{headers:getAuthHeaders()});allLicenses=await r.json();filteredLicenses=[...allLicenses];sortTable(sortColumn,true);renderTable();loadStats();}catch(e){console.error(e);alert('Error loading');}}
         function renderTable(){const start=(currentPage-1)*pageSize,end=start+pageSize,data=filteredLicenses.slice(start,end),tbody=document.getElementById('licensesBody');tbody.innerHTML='';data.forEach((l,i)=>{tbody.innerHTML+=createLicenseRow(l);setTimeout(()=>{const tr=tbody.children[i];if(tr)tr.classList.add('animate-fadeIn');},i*30);});updatePagination();updateTableInfo();}
-        function createLicenseRow(l){const now=new Date(),exp=new Date(l.expires_at),days=Math.ceil((exp-now)/(1000*60*60*24)),isExp=days<0;let badge=!l.is_active?'<span class="px-2 py-0.5 rounded-full text-xs bg-red-900 text-red-200">Blocked</span>':isExp?'<span class="px-2 py-0.5 rounded-full text-xs bg-yellow-900 text-yellow-200">Expired</span>':'<span class="px-2 py-0.5 rounded-full text-xs bg-green-900 text-green-200">Active</span>';const mid=l.machine_id?`<span class="text-xs text-gray-500 font-mono">${l.machine_id.substring(0,10)}...</span>`:'<span class="text-xs text-gray-600">-</span>';const created=new Date(l.created_at).toLocaleDateString(),expires=exp.toLocaleDateString();const daysDisp=isExp?`<span class="text-red-400">${days}</span>`:`<span class="text-green-400">${days}</span>`;const acts=`${l.activation_count}/${l.max_activations}`;return`<tr class="hover:bg-dark-hover"><td class="px-3 py-2"><code class="text-xs bg-dark-hover px-1 rounded">${l.license_key}</code></td><td class="px-3 py-2">${badge}</td><td class="px-3 py-2">${mid}</td><td class="px-3 py-2 text-xs">${created}</td><td class="px-3 py-2 text-xs">${expires}</td><td class="px-3 py-2">${daysDisp}</td><td class="px-3 py-2 text-xs">${acts}</td><td class="px-3 py-2 text-xs text-gray-500">${l.notes||'-'}</td><td class="px-3 py-2"><div class="flex gap-2"><button onclick="showEditModal('${l.license_key}')" class="text-blue-400 hover:text-blue-300"><i class="bi bi-pencil"></i></button><button onclick="deleteLicense('${l.license_key}')" class="text-red-400 hover:text-red-300"><i class="bi bi-trash"></i></button></div></td></tr>`;}
+        function createLicenseRow(l){
+            const now=new Date(),exp=new Date(l.expires_at),days=Math.ceil((exp-now)/(1000*60*60*24)),isExp=days<0;
+            
+            // Determine row class based on status
+            let rowClass = 'hover:bg-dark-hover';
+            if (!l.is_active) {
+                rowClass = 'license-blocked';
+            } else if (isExp) {
+                rowClass = 'license-expired';
+            } else if (!l.machine_id) {
+                rowClass = 'license-unused';
+            } else {
+                rowClass = 'license-active';
+            }
+            
+            let badge=!l.is_active?'<span class="px-2 py-0.5 rounded-full text-xs bg-red-900 text-red-200">Blocked</span>':isExp?'<span class="px-2 py-0.5 rounded-full text-xs bg-yellow-900 text-yellow-200">Expired</span>':'<span class="px-2 py-0.5 rounded-full text-xs bg-green-900 text-green-200">Active</span>';
+            const mid=l.machine_id?`<span class="text-xs text-gray-500 font-mono">${l.machine_id.substring(0,10)}...</span>`:'<span class="text-xs text-gray-600">-</span>';
+            const created=new Date(l.created_at).toLocaleDateString(),expires=exp.toLocaleDateString();
+            const daysDisp=isExp?`<span class="text-red-400">${days}</span>`:`<span class="text-green-400">${days}</span>`;
+            const acts=`${l.activation_count}/${l.max_activations}`;
+            return`<tr class="${rowClass}"><td class="px-3 py-2"><code class="text-xs bg-dark-hover px-1 rounded">${l.license_key}</code></td><td class="px-3 py-2">${badge}</td><td class="px-3 py-2">${mid}</td><td class="px-3 py-2 text-xs">${created}</td><td class="px-3 py-2 text-xs">${expires}</td><td class="px-3 py-2">${daysDisp}</td><td class="px-3 py-2 text-xs">${acts}</td><td class="px-3 py-2 text-xs text-gray-500">${l.notes||'-'}</td><td class="px-3 py-2"><div class="flex gap-2"><button onclick="showEditModal('${l.license_key}')" class="text-blue-400 hover:text-blue-300"><i class="bi bi-pencil"></i></button><button onclick="deleteLicense('${l.license_key}')" class="text-red-400 hover:text-red-300"><i class="bi bi-trash"></i></button></div></td></tr>`;
+        }
         function updatePagination(){const total=Math.ceil(filteredLicenses.length/pageSize),pag=document.getElementById('pagination');pag.innerHTML='';if(total<=1)return;const btn=(t,p,d=false)=>{const b=document.createElement('button');b.textContent=t;b.className=d?'px-2 py-1 rounded bg-gray-700 text-gray-500 text-xs':p===currentPage?'px-2 py-1 rounded bg-purple-600 text-white text-xs':'px-2 py-1 rounded bg-dark-hover hover:bg-gray-700 text-xs';if(!d&&p!==currentPage)b.onclick=()=>{currentPage=p;renderTable();};return b;};pag.appendChild(btn('Prev',currentPage-1,currentPage===1));for(let i=1;i<=Math.min(total,5);i++)pag.appendChild(btn(i,i));if(total>5){const s=document.createElement('span');s.textContent='...';s.className='px-1 text-xs';pag.appendChild(s);pag.appendChild(btn(total,total));}pag.appendChild(btn('Next',currentPage+1,currentPage===total));}
         function updateTableInfo(){const start=(currentPage-1)*pageSize+1,end=Math.min(start+pageSize-1,filteredLicenses.length),total=filteredLicenses.length;document.getElementById('tableInfo').textContent=`Showing ${start} to ${end} of ${total}${filteredLicenses.length!==allLicenses.length?' (filtered)':''}`;}
         function searchTable(){const q=document.getElementById('searchInput').value.toLowerCase();filteredLicenses=allLicenses.filter(l=>l.license_key.toLowerCase().includes(q)||(l.machine_id&&l.machine_id.toLowerCase().includes(q))||(l.notes&&l.notes.toLowerCase().includes(q)));currentPage=1;renderTable();}

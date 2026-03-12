@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕷️ Browsing History</title>
+    <title>Browsing History - Spider Licence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script>
@@ -17,19 +17,28 @@
         .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
         .card-hover { transition: all 0.3s ease; }
         .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .logo-text { font-weight: 800; letter-spacing: -0.5px; }
+        .logo-spider { color: #ef4444; }
+        .recent-entry { background-color: rgba(34, 197, 94, 0.15) !important; }
+        .recent-entry:hover { background-color: rgba(34, 197, 94, 0.25) !important; }
     </style>
 </head>
 <body class="bg-dark-bg text-gray-100 min-h-screen">
-    <!-- Top Navigation -->
+    <!-- Top Navigation - Flex Left Right -->
     <div class="bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-center items-center gap-8">
-                <h1 class="text-xl font-bold">🕷️ Spidy Manager</h1>
-                <nav class="flex gap-6">
-                    <a href="/" class="text-white/70 hover:text-white transition text-sm pb-1">Home</a>
-                    <a href="/history" class="text-white font-semibold text-sm border-b-2 border-white pb-1">History</a>
-                </nav>
-            </div>
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl logo-text">
+                <span class="logo-spider">Spider</span> Licence
+            </h1>
+            <nav class="flex gap-6">
+                <a href="/" class="text-white/70 hover:text-white transition text-sm pb-1">Licence</a>
+                <a href="/history" class="text-white font-semibold text-sm border-b-2 border-white pb-1">History</a>
+            </nav>
+            <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition">
+                <i class="bi bi-box-arrow-right mr-1"></i>Logout
+            </button>
         </div>
     </div>
 
@@ -61,7 +70,7 @@
         <div class="bg-dark-card rounded-lg shadow-lg p-6 animate-fadeIn border border-gray-700">
             <h2 class="text-xl font-bold mb-4">Browsing History</h2>
             
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto hide-scrollbar">
                 <table class="w-full text-xs">
                     <thead class="text-xs uppercase bg-dark-hover border-b border-gray-700">
                         <tr>
@@ -81,9 +90,21 @@
     </div>
 
     <script>
-        const ADMIN_USER='admin',ADMIN_PASS='changeme123';
-        function getAuthHeaders(){return{'Authorization':'Basic '+btoa(ADMIN_USER+':'+ADMIN_PASS),'Content-Type':'application/json'};}
+        // Auth check on page load
+        if (!localStorage.getItem('token')) {
+            window.location.href = '/login';
+        }
+
+        function getAuthHeaders(){return{'Authorization':'Bearer '+localStorage.getItem('token'),'Content-Type':'application/json'};}
         
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('email');
+                window.location.href = '/login';
+            }
+        }
+
         async function loadUsers(){
             try{
                 const r=await fetch('/api/history/users',{headers:getAuthHeaders()});
@@ -112,12 +133,18 @@
                 const tbody=document.getElementById('historyBody');
                 tbody.innerHTML='';
                 
+                const now = new Date();
+                const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+                
                 history.forEach((h,i)=>{
                     const row=document.createElement('tr');
-                    row.className='hover:bg-dark-hover animate-fadeIn';
+                    const visitedDate = new Date(h.visited_at);
+                    const isRecent = visitedDate >= thirtyMinutesAgo;
+                    
+                    row.className = isRecent ? 'recent-entry animate-fadeIn' : 'hover:bg-dark-hover animate-fadeIn';
                     row.style.animationDelay=`${i*20}ms`;
                     
-                    const time=new Date(h.visited_at).toLocaleString();
+                    const time=visitedDate.toLocaleString();
                     const shortUrl=h.url.length>50?h.url.substring(0,50)+'...':h.url;
                     const shortTitle=h.title&&h.title.length>40?h.title.substring(0,40)+'...':h.title||'-';
                     const shortMachine=h.machine_id.substring(0,12)+'...';

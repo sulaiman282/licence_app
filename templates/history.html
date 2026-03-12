@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕷️ Browsing History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { dark: { bg: '#0f172a', card: '#1e293b', hover: '#334155' } } } }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body class="bg-dark-bg text-gray-100 min-h-screen">
+    <!-- Top Navigation -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-center items-center gap-8">
+                <h1 class="text-xl font-bold">🕷️ Spidy Manager</h1>
+                <nav class="flex gap-6">
+                    <a href="/" class="text-white/70 hover:text-white transition text-sm pb-1">Home</a>
+                    <a href="/history" class="text-white font-semibold text-sm border-b-2 border-white pb-1">History</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Filters -->
+        <div class="bg-dark-card rounded-lg shadow-lg p-4 mb-6 animate-fadeIn border border-gray-700">
+            <div class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-xs text-gray-400 mb-1">Filter by User</label>
+                    <select id="userFilter" onchange="filterHistory()" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                        <option value="">All Users (Recent 100)</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs text-gray-400 mb-1">Limit</label>
+                    <select id="limitFilter" onchange="filterHistory()" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                    </select>
+                </div>
+                <button onclick="loadHistory()" class="bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 px-4 py-2 rounded text-sm font-semibold">
+                    <i class="bi bi-arrow-clockwise mr-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="bg-dark-card rounded-lg shadow-lg p-6 animate-fadeIn border border-gray-700">
+            <h2 class="text-xl font-bold mb-4">Browsing History</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead class="text-xs uppercase bg-dark-hover border-b border-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Time</th>
+                            <th class="px-3 py-2 text-left">URL</th>
+                            <th class="px-3 py-2 text-left">Title</th>
+                            <th class="px-3 py-2 text-left">Profile</th>
+                            <th class="px-3 py-2 text-left">Machine ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody" class="divide-y divide-gray-700"></tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 text-xs text-gray-400" id="historyInfo">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_USER='admin',ADMIN_PASS='changeme123';
+        function getAuthHeaders(){return{'Authorization':'Basic '+btoa(ADMIN_USER+':'+ADMIN_PASS),'Content-Type':'application/json'};}
+        
+        async function loadUsers(){
+            try{
+                const r=await fetch('/api/history/users',{headers:getAuthHeaders()});
+                const users=await r.json();
+                const select=document.getElementById('userFilter');
+                users.forEach(u=>{
+                    const opt=document.createElement('option');
+                    opt.value=u.machine_id;
+                    opt.textContent=`${u.machine_id.substring(0,12)}... (${u.visit_count} visits)`;
+                    select.appendChild(opt);
+                });
+            }catch(e){console.error(e);}
+        }
+        
+        async function loadHistory(){
+            const machineId=document.getElementById('userFilter').value;
+            const limit=document.getElementById('limitFilter').value;
+            
+            try{
+                let url=`/api/history?limit=${limit}`;
+                if(machineId)url+=`&machine_id=${machineId}`;
+                
+                const r=await fetch(url,{headers:getAuthHeaders()});
+                const history=await r.json();
+                
+                const tbody=document.getElementById('historyBody');
+                tbody.innerHTML='';
+                
+                history.forEach((h,i)=>{
+                    const row=document.createElement('tr');
+                    row.className='hover:bg-dark-hover animate-fadeIn';
+                    row.style.animationDelay=`${i*20}ms`;
+                    
+                    const time=new Date(h.visited_at).toLocaleString();
+                    const shortUrl=h.url.length>50?h.url.substring(0,50)+'...':h.url;
+                    const shortTitle=h.title&&h.title.length>40?h.title.substring(0,40)+'...':h.title||'-';
+                    const shortMachine=h.machine_id.substring(0,12)+'...';
+                    
+                    row.innerHTML=`
+                        <td class="px-3 py-2 text-gray-400">${time}</td>
+                        <td class="px-3 py-2"><a href="${h.url}" target="_blank" class="text-blue-400 hover:text-blue-300">${shortUrl}</a></td>
+                        <td class="px-3 py-2 text-gray-300">${shortTitle}</td>
+                        <td class="px-3 py-2 text-gray-400">${h.profile_name}</td>
+                        <td class="px-3 py-2"><code class="text-xs bg-dark-hover px-1 rounded">${shortMachine}</code></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                document.getElementById('historyInfo').textContent=`Showing ${history.length} entries`;
+            }catch(e){
+                console.error(e);
+                alert('Error loading history');
+            }
+        }
+        
+        function filterHistory(){
+            loadHistory();
+        }
+        
+        document.addEventListener('DOMContentLoaded',()=>{
+            loadUsers();
+            loadHistory();
+        });
+    </script>
+</body>
+</html>

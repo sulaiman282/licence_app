@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕷️ Spidy Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { dark: { bg: '#0f172a', card: '#1e293b', hover: '#334155' } } } }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+        .animate-slideIn { animation: slideIn 0.4s ease-out; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body class="bg-dark-bg text-gray-100 min-h-screen">
+    <!-- Top Navigation - Flex Left Right -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold">🕷️ Spidy Manager</h1>
+            <nav class="flex gap-6">
+                <a href="/" class="text-white font-semibold text-sm border-b-2 border-white pb-1">Home</a>
+                <a href="/history" class="text-white/70 hover:text-white transition text-sm pb-1">History</a>
+            </nav>
+            <div class="w-32"></div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-dark-card rounded-lg shadow-lg p-4 card-hover animate-slideIn border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-gray-400 text-xs mb-1">Total</p><p class="text-2xl font-bold text-blue-400" id="stat-total">0</p></div>
+                    <i class="bi bi-key-fill text-3xl text-blue-400"></i>
+                </div>
+            </div>
+            <div class="bg-dark-card rounded-lg shadow-lg p-4 card-hover animate-slideIn border border-gray-700" style="animation-delay:0.1s">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-gray-400 text-xs mb-1">Active</p><p class="text-2xl font-bold text-green-400" id="stat-active">0</p></div>
+                    <i class="bi bi-check-circle-fill text-3xl text-green-400"></i>
+                </div>
+            </div>
+            <div class="bg-dark-card rounded-lg shadow-lg p-4 card-hover animate-slideIn border border-gray-700" style="animation-delay:0.2s">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-gray-400 text-xs mb-1">Valid</p><p class="text-2xl font-bold text-purple-400" id="stat-valid">0</p></div>
+                    <i class="bi bi-shield-check text-3xl text-purple-400"></i>
+                </div>
+            </div>
+            <div class="bg-dark-card rounded-lg shadow-lg p-4 card-hover animate-slideIn border border-gray-700" style="animation-delay:0.3s">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-gray-400 text-xs mb-1">Activated</p><p class="text-2xl font-bold text-yellow-400" id="stat-activated">0</p></div>
+                    <i class="bi bi-laptop text-3xl text-yellow-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-dark-card rounded-lg shadow-lg p-6 animate-fadeIn border border-gray-700">
+            <!-- Search Left, Filter & Create Right -->
+            <div class="flex justify-between items-center gap-4 mb-4">
+                <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search licenses..." 
+                       class="w-full max-w-md bg-dark-hover border border-gray-600 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-purple-500">
+                <div class="flex gap-2">
+                    <button onclick="showFilterModal()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-semibold whitespace-nowrap">
+                        <i class="bi bi-funnel mr-1"></i>Filter
+                    </button>
+                    <button onclick="showCreateModal()" class="bg-gradient-to-r from-green-600 to-green-700 hover:opacity-90 px-4 py-2 rounded text-sm font-semibold whitespace-nowrap">
+                        <i class="bi bi-plus-circle mr-1"></i>Create
+                    </button>
+                </div>
+            </div>
+
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead class="text-xs uppercase bg-dark-hover border-b border-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-left cursor-pointer hover:bg-gray-700" onclick="sortTable(0)">Key <i class="bi bi-arrow-down-up"></i></th>
+                            <th class="px-3 py-2 text-left cursor-pointer hover:bg-gray-700" onclick="sortTable(1)">Status</th>
+                            <th class="px-3 py-2 text-left cursor-pointer hover:bg-gray-700" onclick="sortTable(2)">Machine</th>
+                            <th class="px-3 py-2 text-left cursor-pointer hover:bg-gray-700" onclick="sortTable(3)">Created</th>
+                            <th class="px-3 py-2 text-left cursor-pointer hover:bg-gray-700" onclick="sortTable(4)">Expires</th>
+                            <th class="px-3 py-2 text-left cursor-pointer hover:bg-gray-700" onclick="sortTable(5)">Days</th>
+                            <th class="px-3 py-2 text-left">Act</th>
+                            <th class="px-3 py-2 text-left">Notes</th>
+                            <th class="px-3 py-2 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licensesBody" class="divide-y divide-gray-700"></tbody>
+                </table>
+            </div>
+            
+            <!-- Show Count Left, Pagination Center -->
+            <div class="flex justify-between items-center mt-4">
+                <div class="flex items-center gap-3">
+                    <div class="text-xs text-gray-400" id="tableInfo">Showing 0 to 0 of 0</div>
+                    <select id="pageSize" onchange="changePageSize()" class="bg-dark-hover border border-gray-600 rounded px-2 py-1 text-xs">
+                        <option>10</option><option>25</option><option>50</option><option>100</option>
+                    </select>
+                </div>
+                <div class="flex gap-1" id="pagination"></div>
+                <div class="w-32"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div id="filterModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-dark-card rounded-lg shadow-2xl max-w-lg w-full animate-fadeIn border border-gray-700">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-t-lg">
+                <h3 class="text-lg font-bold"><i class="bi bi-funnel mr-2"></i>Filter & Sort</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Date Filter Type</label>
+                    <select id="filterType" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                        <option value="created">Created Date</option>
+                        <option value="expires">Expiry Date</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                        <input type="date" id="startDate" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                        <input type="date" id="endDate" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Sort By</label>
+                    <select id="sortBy" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                        <option value="3-desc">Created Date (Newest First)</option>
+                        <option value="3-asc">Created Date (Oldest First)</option>
+                        <option value="4-desc">Expiry Date (Latest First)</option>
+                        <option value="4-asc">Expiry Date (Earliest First)</option>
+                        <option value="5-desc">Days Left (Most First)</option>
+                        <option value="5-asc">Days Left (Least First)</option>
+                        <option value="0-asc">License Key (A-Z)</option>
+                        <option value="0-desc">License Key (Z-A)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 p-6 pt-0">
+                <button onclick="clearFilter()" class="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm font-semibold">
+                    <i class="bi bi-x-circle mr-1"></i>Clear
+                </button>
+                <button onclick="applyFilter()" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 px-4 py-2 rounded text-sm font-semibold">
+                    <i class="bi bi-check-circle mr-1"></i>Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Create Modal -->
+    <div id="createModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-dark-card rounded-lg shadow-2xl max-w-md w-full animate-fadeIn border border-gray-700">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 p-4 rounded-t-lg">
+                <h3 class="text-lg font-bold"><i class="bi bi-plus-circle mr-2"></i>Create License</h3>
+            </div>
+            <div class="p-4 space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Duration (Days)</label>
+                    <input type="number" id="create-duration" value="30" min="1" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Max Activations</label>
+                    <input type="number" id="create-max-activations" value="1" min="1" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Notes</label>
+                    <textarea id="create-notes" rows="2" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 p-4 pt-0">
+                <button onclick="hideCreateModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm font-semibold">Cancel</button>
+                <button onclick="createLicense()" class="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:opacity-90 px-4 py-2 rounded text-sm font-semibold">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-dark-card rounded-lg shadow-2xl max-w-md w-full animate-fadeIn border border-gray-700">
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-t-lg">
+                <h3 class="text-lg font-bold"><i class="bi bi-pencil mr-2"></i>Edit License</h3>
+            </div>
+            <div class="p-4 space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">License Key</label>
+                    <div id="edit-license-key" class="bg-dark-hover p-2 rounded font-mono text-xs break-all"></div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Extend Days</label>
+                    <input type="number" id="edit-extend-days" value="30" min="1" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Max Activations</label>
+                    <input type="number" id="edit-max-activations" min="1" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Status</label>
+                    <select id="edit-is-active" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm">
+                        <option value="1">Active</option>
+                        <option value="0">Blocked</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Notes</label>
+                    <textarea id="edit-notes" rows="2" class="w-full bg-dark-hover border border-gray-600 rounded px-3 py-2 text-sm"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 p-4 pt-0">
+                <button onclick="hideEditModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm font-semibold">Cancel</button>
+                <button onclick="updateLicense()" class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 px-4 py-2 rounded text-sm font-semibold">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-dark-card rounded-lg shadow-2xl max-w-md w-full animate-fadeIn border border-gray-700">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-t-lg">
+                <h3 class="text-lg font-bold"><i class="bi bi-check-circle mr-2"></i>Success!</h3>
+            </div>
+            <div class="p-4">
+                <p class="text-xs text-gray-400 mb-2">License Key:</p>
+                <div id="new-license-key" class="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded font-mono text-xs break-all mb-2"></div>
+                <p class="text-xs text-gray-400">Expires: <strong id="new-expires-at"></strong></p>
+                <button onclick="copyLicenseKey()" class="w-full bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm font-semibold mt-3">
+                    <i class="bi bi-clipboard mr-1"></i>Copy
+                </button>
+            </div>
+            <div class="p-4 pt-0">
+                <button onclick="hideSuccessModal()" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:opacity-90 px-4 py-2 rounded text-sm font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allLicenses=[],filteredLicenses=[],currentPage=1,pageSize=10,currentEditKey=null,sortColumn=3,sortAsc=false;
+        const ADMIN_USER='admin',ADMIN_PASS='changeme123';
+        function getAuthHeaders(){return{'Authorization':'Basic '+btoa(ADMIN_USER+':'+ADMIN_PASS),'Content-Type':'application/json'};}
+
+        async function loadStats(){try{const r=await fetch('/api/stats',{headers:getAuthHeaders()}),s=await r.json();document.getElementById('stat-total').textContent=s.total;document.getElementById('stat-active').textContent=s.active;document.getElementById('stat-valid').textContent=s.valid;document.getElementById('stat-activated').textContent=s.activated;}catch(e){console.error(e);}}
+        async function loadLicenses(){try{const r=await fetch('/api/licenses',{headers:getAuthHeaders()});allLicenses=await r.json();filteredLicenses=[...allLicenses];sortTable(sortColumn,true);renderTable();loadStats();}catch(e){console.error(e);alert('Error loading');}}
+        function renderTable(){const start=(currentPage-1)*pageSize,end=start+pageSize,data=filteredLicenses.slice(start,end),tbody=document.getElementById('licensesBody');tbody.innerHTML='';data.forEach((l,i)=>{tbody.innerHTML+=createLicenseRow(l);setTimeout(()=>{const tr=tbody.children[i];if(tr)tr.classList.add('animate-fadeIn');},i*30);});updatePagination();updateTableInfo();}
+        function createLicenseRow(l){const now=new Date(),exp=new Date(l.expires_at),days=Math.ceil((exp-now)/(1000*60*60*24)),isExp=days<0;let badge=!l.is_active?'<span class="px-2 py-0.5 rounded-full text-xs bg-red-900 text-red-200">Blocked</span>':isExp?'<span class="px-2 py-0.5 rounded-full text-xs bg-yellow-900 text-yellow-200">Expired</span>':'<span class="px-2 py-0.5 rounded-full text-xs bg-green-900 text-green-200">Active</span>';const mid=l.machine_id?`<span class="text-xs text-gray-500 font-mono">${l.machine_id.substring(0,10)}...</span>`:'<span class="text-xs text-gray-600">-</span>';const created=new Date(l.created_at).toLocaleDateString(),expires=exp.toLocaleDateString();const daysDisp=isExp?`<span class="text-red-400">${days}</span>`:`<span class="text-green-400">${days}</span>`;const acts=`${l.activation_count}/${l.max_activations}`;return`<tr class="hover:bg-dark-hover"><td class="px-3 py-2"><code class="text-xs bg-dark-hover px-1 rounded">${l.license_key}</code></td><td class="px-3 py-2">${badge}</td><td class="px-3 py-2">${mid}</td><td class="px-3 py-2 text-xs">${created}</td><td class="px-3 py-2 text-xs">${expires}</td><td class="px-3 py-2">${daysDisp}</td><td class="px-3 py-2 text-xs">${acts}</td><td class="px-3 py-2 text-xs text-gray-500">${l.notes||'-'}</td><td class="px-3 py-2"><div class="flex gap-2"><button onclick="showEditModal('${l.license_key}')" class="text-blue-400 hover:text-blue-300"><i class="bi bi-pencil"></i></button><button onclick="deleteLicense('${l.license_key}')" class="text-red-400 hover:text-red-300"><i class="bi bi-trash"></i></button></div></td></tr>`;}
+        function updatePagination(){const total=Math.ceil(filteredLicenses.length/pageSize),pag=document.getElementById('pagination');pag.innerHTML='';if(total<=1)return;const btn=(t,p,d=false)=>{const b=document.createElement('button');b.textContent=t;b.className=d?'px-2 py-1 rounded bg-gray-700 text-gray-500 text-xs':p===currentPage?'px-2 py-1 rounded bg-purple-600 text-white text-xs':'px-2 py-1 rounded bg-dark-hover hover:bg-gray-700 text-xs';if(!d&&p!==currentPage)b.onclick=()=>{currentPage=p;renderTable();};return b;};pag.appendChild(btn('Prev',currentPage-1,currentPage===1));for(let i=1;i<=Math.min(total,5);i++)pag.appendChild(btn(i,i));if(total>5){const s=document.createElement('span');s.textContent='...';s.className='px-1 text-xs';pag.appendChild(s);pag.appendChild(btn(total,total));}pag.appendChild(btn('Next',currentPage+1,currentPage===total));}
+        function updateTableInfo(){const start=(currentPage-1)*pageSize+1,end=Math.min(start+pageSize-1,filteredLicenses.length),total=filteredLicenses.length;document.getElementById('tableInfo').textContent=`Showing ${start} to ${end} of ${total}${filteredLicenses.length!==allLicenses.length?' (filtered)':''}`;}
+        function searchTable(){const q=document.getElementById('searchInput').value.toLowerCase();filteredLicenses=allLicenses.filter(l=>l.license_key.toLowerCase().includes(q)||(l.machine_id&&l.machine_id.toLowerCase().includes(q))||(l.notes&&l.notes.toLowerCase().includes(q)));currentPage=1;renderTable();}
+        function changePageSize(){pageSize=parseInt(document.getElementById('pageSize').value);currentPage=1;renderTable();}
+        function sortTable(col,keep=false){if(!keep){sortAsc=sortColumn===col?!sortAsc:true;sortColumn=col;}filteredLicenses.sort((a,b)=>{let av,bv;switch(col){case 0:av=a.license_key;bv=b.license_key;break;case 1:av=a.is_active;bv=b.is_active;break;case 2:av=a.machine_id||'';bv=b.machine_id||'';break;case 3:av=new Date(a.created_at);bv=new Date(b.created_at);break;case 4:av=new Date(a.expires_at);bv=new Date(b.expires_at);break;case 5:av=Math.ceil((new Date(a.expires_at)-new Date())/(1000*60*60*24));bv=Math.ceil((new Date(b.expires_at)-new Date())/(1000*60*60*24));break;}if(av<bv)return sortAsc?-1:1;if(av>bv)return sortAsc?1:-1;return 0;});if(!keep)renderTable();}
+
+        function showFilterModal(){document.getElementById('filterModal').classList.remove('hidden');}
+        function hideFilterModal(){document.getElementById('filterModal').classList.add('hidden');}
+        async function applyFilter(){const filterType=document.getElementById('filterType').value,startDate=document.getElementById('startDate').value,endDate=document.getElementById('endDate').value,sortBy=document.getElementById('sortBy').value;if(startDate||endDate){try{const r=await fetch('/api/licenses/filter',{method:'POST',headers:getAuthHeaders(),body:JSON.stringify({filter_type:filterType,start_date:startDate,end_date:endDate})});allLicenses=await r.json();filteredLicenses=[...allLicenses];}catch(e){console.error(e);alert('Error filtering');return;}}else{filteredLicenses=[...allLicenses];}const[col,dir]=sortBy.split('-');sortColumn=parseInt(col);sortAsc=dir==='asc';sortTable(sortColumn,true);renderTable();loadStats();hideFilterModal();}
+        function clearFilter(){document.getElementById('startDate').value='';document.getElementById('endDate').value='';document.getElementById('sortBy').value='3-desc';loadLicenses();hideFilterModal();}
+        function showCreateModal(){document.getElementById('createModal').classList.remove('hidden');}
+        function hideCreateModal(){document.getElementById('createModal').classList.add('hidden');}
+        async function createLicense(){const dur=document.getElementById('create-duration').value,max=document.getElementById('create-max-activations').value,notes=document.getElementById('create-notes').value;try{const r=await fetch('/api/licenses',{method:'POST',headers:getAuthHeaders(),body:JSON.stringify({duration_days:parseInt(dur),max_activations:parseInt(max),notes:notes})}),res=await r.json();if(res.success){hideCreateModal();document.getElementById('new-license-key').textContent=res.license_key;document.getElementById('new-expires-at').textContent=new Date(res.expires_at).toLocaleString();document.getElementById('successModal').classList.remove('hidden');loadLicenses();}else alert('Error: '+res.error);}catch(e){console.error(e);alert('Error');}}
+        function hideSuccessModal(){document.getElementById('successModal').classList.add('hidden');}
+        function copyLicenseKey(){const key=document.getElementById('new-license-key').textContent;navigator.clipboard.writeText(key).then(()=>alert('Copied!'));}
+        async function showEditModal(key){currentEditKey=key;const l=allLicenses.find(x=>x.license_key===key);if(l){document.getElementById('edit-license-key').textContent=l.license_key;document.getElementById('edit-max-activations').value=l.max_activations;document.getElementById('edit-is-active').value=l.is_active?'1':'0';document.getElementById('edit-notes').value=l.notes||'';document.getElementById('editModal').classList.remove('hidden');}}
+        function hideEditModal(){document.getElementById('editModal').classList.add('hidden');}
+        async function updateLicense(){const ext=document.getElementById('edit-extend-days').value,max=document.getElementById('edit-max-activations').value,active=document.getElementById('edit-is-active').value==='1',notes=document.getElementById('edit-notes').value;const upd={is_active:active,notes:notes};if(ext&&parseInt(ext)>0)upd.extend_days=parseInt(ext);if(max)upd.max_activations=parseInt(max);try{const r=await fetch(`/api/licenses/${currentEditKey}`,{method:'PUT',headers:getAuthHeaders(),body:JSON.stringify(upd)}),res=await r.json();if(res.success){hideEditModal();loadLicenses();}else alert('Error: '+res.error);}catch(e){console.error(e);alert('Error');}}
+        async function deleteLicense(key){if(!confirm(`Delete ${key}?`))return;try{const r=await fetch(`/api/licenses/${key}`,{method:'DELETE',headers:getAuthHeaders()}),res=await r.json();if(res.success)loadLicenses();else alert('Error: '+res.error);}catch(e){console.error(e);alert('Error');}}
+        document.addEventListener('DOMContentLoaded',()=>loadLicenses());
+    </script>
+</body>
+</html>
